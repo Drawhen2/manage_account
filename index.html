@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manajemen Akun</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <h1>📂 Manajemen Akun</h1>
+
+    <form id="account-form" class="card">
+      <div class="form-group">
+        <input type="text" id="name" placeholder="Nama Akun" required />
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="text" id="password" placeholder="Password" required />
+        <input type="url" id="website" placeholder="Link Website" />
+        <input type="text" id="contract" placeholder="Contract Address" />
+      </div>
+      <button type="submit" class="btn-primary">+ Tambah Akun</button>
+    </form>
+
+    <div class="table-container card">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Akun</th>
+            <th>Email</th>
+            <th>Password</th>
+            <th>Website</th>
+            <th>Contract</th>
+            <th>Opsi</th>
+          </tr>
+        </thead>
+        <tbody id="account-table">
+          <!-- Data akan dimuat di sini -->
+        </tbody>
+      </table>
+      <button onclick="exportToCSV()" class="btn-primary">⬇️ Export ke CSV</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
