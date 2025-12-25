@@ -1,47 +1,444 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manajemen Akun</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pengeluaran Bulanan iOS Style</title>
+    <style>
+        /* --- iOS Variables & Reset --- */
+        :root {
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-gray-text: #8E8E93;
+            --ios-separator: #C6C6C8;
+            --ios-text: #000000;
+            --ios-radius: 12px;
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 100px; /* Space for FAB */
+        }
+
+        /* --- Header / Dashboard --- */
+        .header {
+            padding: 20px 20px 10px 20px;
+            background-color: var(--ios-bg);
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .summary-card {
+            margin-top: 10px;
+        }
+
+        .total-label {
+            font-size: 13px;
+            color: var(--ios-gray-text);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .total-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--ios-text);
+        }
+
+        /* --- List Section --- */
+        .list-container {
+            margin: 20px 16px;
+            background-color: var(--ios-card);
+            border-radius: var(--ios-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--ios-card);
+            position: relative;
+        }
+
+        .list-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 16px;
+            height: 1px;
+            background-color: #E5E5EA; /* Light separator */
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .item-meta {
+            font-size: 13px;
+            color: var(--ios-gray-text);
+        }
+
+        .item-total {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--ios-text);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--ios-red);
+            font-size: 14px;
+            margin-left: 10px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--ios-gray-text);
+            font-size: 15px;
+        }
+
+        /* --- Floating Action Button (FAB) --- */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--ios-blue);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 30px;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Modal / Form --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.4);
+            z-index: 200;
+            display: none;
+            backdrop-filter: blur(3px);
+            align-items: flex-end; /* Bottom sheet style */
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--ios-bg);
+            width: 100%;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            padding: 20px 0;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px 20px 16px;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            font-size: 17px;
+            color: var(--ios-blue);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .btn-text.cancel {
+            color: var(--ios-blue);
+        }
+
+        .btn-text.save {
+            font-weight: 600;
+        }
+
+        /* iOS Form Style */
+        .form-group-container {
+            background-color: var(--ios-card);
+            margin: 0 16px;
+            border-radius: var(--ios-radius);
+            padding-left: 16px;
+        }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px 12px 0;
+            border-bottom: 1px solid #E5E5EA;
+        }
+
+        .form-row:last-child {
+            border-bottom: none;
+        }
+
+        .form-row label {
+            font-size: 17px;
+            color: var(--ios-text);
+            width: 100px;
+        }
+
+        .form-row input {
+            flex: 1;
+            border: none;
+            font-size: 17px;
+            text-align: right;
+            outline: none;
+            color: var(--ios-blue);
+            background: transparent;
+        }
+        
+        .form-row input::placeholder {
+            color: #C7C7CC;
+        }
+
+        .form-row input[readonly] {
+            color: var(--ios-gray-text);
+        }
+
+    </style>
 </head>
 <body>
-  <div class="app-container">
-    <h1>📂 Manajemen Akun</h1>
 
-    <form id="account-form" class="card">
-      <div class="form-group">
-        <input type="text" id="name" placeholder="Nama Akun" required />
-        <input type="email" id="email" placeholder="Email" required />
-        <input type="text" id="password" placeholder="Password" required />
-        <input type="url" id="website" placeholder="Link Website" />
-        <input type="text" id="contract" placeholder="Contract Address" />
-      </div>
-      <button type="submit" class="btn-primary">+ Tambah Akun</button>
-    </form>
+    <header class="header">
+        <h1>Pengeluaran</h1>
+        <div class="summary-card">
+            <div class="total-label">Total Bulan Ini</div>
+            <div class="total-amount" id="dashboard-total">Rp 0</div>
+        </div>
+    </header>
 
-    <div class="table-container card">
-      <table>
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Nama Akun</th>
-            <th>Email</th>
-            <th>Password</th>
-            <th>Website</th>
-            <th>Contract</th>
-            <th>Opsi</th>
-          </tr>
-        </thead>
-        <tbody id="account-table">
-          <!-- Data akan dimuat di sini -->
-        </tbody>
-      </table>
-      <button onclick="exportToCSV()" class="btn-primary">⬇️ Export ke CSV</button>
+    <div class="list-container" id="expense-list">
+        <div class="empty-state">Belum ada pengeluaran.</div>
     </div>
-  </div>
 
-  <script src="script.js"></script>
+    <button class="fab" onclick="openModal()">+</button>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="btn-text cancel" onclick="closeModal()">Batal</button>
+                <div class="modal-title">Item Baru</div>
+                <button class="btn-text save" onclick="saveItem()">Simpan</button>
+            </div>
+
+            <form id="add-form">
+                <div class="form-group-container">
+                    <div class="form-row">
+                        <label>Nama Item</label>
+                        <input type="text" id="input-name" placeholder="Contoh: Kopi" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Harga</label>
+                        <input type="number" id="input-price" placeholder="0" oninput="calculateTotal()" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Qty</label>
+                        <input type="number" id="input-qty" value="1" placeholder="1" oninput="calculateTotal()" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Total</label>
+                        <input type="text" id="input-total" placeholder="Rp 0" readonly>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let expenses = [];
+
+        // --- DOM Elements ---
+        const modal = document.getElementById('modal');
+        const listContainer = document.getElementById('expense-list');
+        const dashboardTotal = document.getElementById('dashboard-total');
+        
+        const inputName = document.getElementById('input-name');
+        const inputPrice = document.getElementById('input-price');
+        const inputQty = document.getElementById('input-qty');
+        const inputTotal = document.getElementById('input-total');
+
+        // --- Functions ---
+
+        // Format Currency to IDR
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(number);
+        }
+
+        // Open/Close Modal
+        function openModal() {
+            modal.classList.add('active');
+            inputName.focus();
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            clearForm();
+        }
+
+        // Clear Form Inputs
+        function clearForm() {
+            inputName.value = '';
+            inputPrice.value = '';
+            inputQty.value = '1';
+            inputTotal.value = '';
+        }
+
+        // Auto Calculate Total in Form
+        function calculateTotal() {
+            const price = parseFloat(inputPrice.value) || 0;
+            const qty = parseFloat(inputQty.value) || 0;
+            const total = price * qty;
+            inputTotal.value = formatRupiah(total);
+        }
+
+        // Save Item
+        function saveItem() {
+            const name = inputName.value.trim();
+            const price = parseFloat(inputPrice.value);
+            const qty = parseFloat(inputQty.value);
+
+            if (!name || isNaN(price) || isNaN(qty) || qty <= 0) {
+                alert("Mohon lengkapi semua data dengan benar.");
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                qty: qty,
+                total: price * qty
+            };
+
+            expenses.push(newItem);
+            renderList();
+            closeModal();
+        }
+
+        // Delete Item
+        function deleteItem(id) {
+            if(confirm('Hapus item ini?')) {
+                expenses = expenses.filter(item => item.id !== id);
+                renderList();
+            }
+        }
+
+        // Render List & Update Dashboard
+        function renderList() {
+            listContainer.innerHTML = '';
+            let grandTotal = 0;
+
+            if (expenses.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">Belum ada pengeluaran.</div>';
+                dashboardTotal.innerText = formatRupiah(0);
+                return;
+            }
+
+            expenses.forEach(item => {
+                grandTotal += item.total;
+
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="item-details">
+                        <span class="item-name">${item.name}</span>
+                        <span class="item-meta">${item.qty} x ${formatRupiah(item.price)}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="item-total">${formatRupiah(item.total)}</span>
+                        <button class="delete-btn" onclick="deleteItem(${item.id})">Hapus</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+
+            // Update Dashboard
+            dashboardTotal.innerText = formatRupiah(grandTotal);
+        }
+
+        // Initialize with sample data (Optional, currently empty)
+        renderList();
+
+        // Close modal when clicking outside form
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+    </script>
 </body>
 </html>
