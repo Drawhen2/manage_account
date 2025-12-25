@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tracking Gaji iOS Style</title>
+    <title>Tracking Gaji iOS - PDF Support</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* --- iOS Variables & Reset --- */
         :root {
@@ -56,6 +57,12 @@
             letter-spacing: -0.5px;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
         .btn-link {
             background: none;
             border: none;
@@ -66,12 +73,24 @@
             padding: 0;
         }
 
+        .btn-icon {
+            font-size: 24px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Area yang akan di-print ke PDF */
+        #printable-area {
+            width: 100%;
+        }
+
         .summary-card {
             background-color: var(--ios-card);
             border-radius: var(--ios-radius);
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             text-align: center;
+            margin-bottom: 20px;
         }
 
         .balance-label {
@@ -119,7 +138,7 @@
 
         /* --- List Section --- */
         .list-header {
-            margin: 25px 20px 5px 20px;
+            margin: 5px 20px 5px 20px;
             font-size: 13px;
             color: var(--ios-gray-text);
             text-transform: uppercase;
@@ -149,12 +168,13 @@
             right: 0;
             left: 16px;
             height: 1px;
-            background-color: #E5E5EA; /* Light separator */
+            background-color: #E5E5EA;
         }
 
         .item-details {
             display: flex;
             flex-direction: column;
+            flex: 1;
         }
 
         .item-name {
@@ -168,21 +188,34 @@
             color: var(--ios-gray-text);
         }
 
+        .item-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
         .item-total {
             font-size: 17px;
             font-weight: 600;
             color: var(--ios-text);
         }
 
-        .delete-btn {
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
             background: none;
             border: none;
-            color: var(--ios-red);
             font-size: 14px;
-            margin-left: 10px;
             cursor: pointer;
             padding: 5px;
         }
+
+        .btn-edit { color: var(--ios-blue); }
+        .btn-delete { color: var(--ios-red); }
 
         .empty-state {
             text-align: center;
@@ -212,9 +245,7 @@
             transition: transform 0.2s;
         }
 
-        .fab:active {
-            transform: scale(0.95);
-        }
+        .fab:active { transform: scale(0.95); }
 
         /* --- Modal / Form --- */
         .modal-overlay {
@@ -227,12 +258,10 @@
             z-index: 200;
             display: none;
             backdrop-filter: blur(3px);
-            align-items: flex-end; /* Bottom sheet style */
+            align-items: flex-end;
         }
 
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
 
         .modal-content {
             background-color: var(--ios-bg);
@@ -257,10 +286,7 @@
             padding: 0 16px 20px 16px;
         }
 
-        .modal-title {
-            font-size: 17px;
-            font-weight: 600;
-        }
+        .modal-title { font-size: 17px; font-weight: 600; }
 
         .btn-text {
             background: none;
@@ -290,9 +316,7 @@
             border-bottom: 1px solid #E5E5EA;
         }
 
-        .form-row:last-child {
-            border-bottom: none;
-        }
+        .form-row:last-child { border-bottom: none; }
 
         .form-row label {
             font-size: 17px;
@@ -313,6 +337,9 @@
         .form-row input::placeholder { color: #C7C7CC; }
         .form-row input[readonly] { color: var(--ios-gray-text); }
 
+        /* Hide specific elements during export */
+        .hide-on-export { display: none !important; }
+
     </style>
 </head>
 <body>
@@ -320,30 +347,35 @@
     <header class="header">
         <div class="header-top">
             <h1>Keuangan</h1>
-            <button class="btn-link" onclick="openSalaryModal()">Atur Gaji</button>
+            <div class="header-actions">
+                <button class="btn-link btn-icon" onclick="downloadPDF()" title="Cetak PDF">📄</button>
+                <button class="btn-link" onclick="openSalaryModal()">Atur Gaji</button>
+            </div>
         </div>
         
-        <div class="summary-card">
-            <div class="balance-label">Sisa Gaji Saat Ini</div>
-            <div class="balance-amount" id="dashboard-remaining">Rp 0</div>
-            
-            <div class="stats-row">
-                <div class="stat-item">
-                    <div class="stat-label">Pemasukan (Gaji)</div>
-                    <div class="stat-value" id="dashboard-salary" style="color: var(--ios-blue);">Rp 0</div>
+        <div id="printable-area">
+            <div class="summary-card">
+                <div class="balance-label">Sisa Gaji Saat Ini</div>
+                <div class="balance-amount" id="dashboard-remaining">Rp 0</div>
+                
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Pemasukan (Gaji)</div>
+                        <div class="stat-value" id="dashboard-salary" style="color: var(--ios-blue);">Rp 0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Pengeluaran</div>
+                        <div class="stat-value" id="dashboard-expense" style="color: var(--ios-red);">Rp 0</div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">Pengeluaran</div>
-                    <div class="stat-value" id="dashboard-expense" style="color: var(--ios-red);">Rp 0</div>
-                </div>
+            </div>
+
+            <div class="list-header">Riwayat Pengeluaran</div>
+            <div class="list-container" id="expense-list">
+                <div class="empty-state">Belum ada data.</div>
             </div>
         </div>
     </header>
-
-    <div class="list-header">Riwayat Pengeluaran</div>
-    <div class="list-container" id="expense-list">
-        <div class="empty-state">Belum ada data.</div>
-    </div>
 
     <button class="fab" onclick="openAddModal()">+</button>
 
@@ -351,7 +383,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button class="btn-text cancel" onclick="closeAddModal()">Batal</button>
-                <div class="modal-title">Pengeluaran Baru</div>
+                <div class="modal-title" id="modal-title">Pengeluaran Baru</div>
                 <button class="btn-text save" onclick="saveItem()">Simpan</button>
             </div>
 
@@ -382,7 +414,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button class="btn-text cancel" onclick="closeSalaryModal()">Batal</button>
-                <div class="modal-title">Atur Gaji</div>
+                <div class="modal-title">Edit Gaji</div>
                 <button class="btn-text save" onclick="saveSalary()">Simpan</button>
             </div>
             <div class="form-group-container">
@@ -398,11 +430,13 @@
         // --- State Management ---
         let salary = 0;
         let expenses = [];
+        let editingId = null; // Menyimpan ID item yang sedang diedit
 
         // --- DOM Elements ---
         const addModal = document.getElementById('add-modal');
         const salaryModal = document.getElementById('salary-modal');
         const listContainer = document.getElementById('expense-list');
+        const modalTitle = document.getElementById('modal-title');
         
         // Dashboard Elements
         const dashboardRemaining = document.getElementById('dashboard-remaining');
@@ -418,9 +452,7 @@
         // Salary Form Elements
         const inputSalary = document.getElementById('input-salary');
 
-        // --- Functions ---
-
-        // Format Currency to IDR
+        // --- Helper Functions ---
         function formatRupiah(number) {
             return new Intl.NumberFormat('id-ID', { 
                 style: 'currency', 
@@ -429,15 +461,34 @@
             }).format(number);
         }
 
-        // --- Add Item Modal Logic ---
-        function openAddModal() {
+        // --- Add/Edit Item Modal Logic ---
+        function openAddModal(id = null) {
             addModal.classList.add('active');
+            
+            if (id) {
+                // Mode Edit
+                const item = expenses.find(x => x.id === id);
+                if(item) {
+                    editingId = id;
+                    modalTitle.innerText = "Edit Pengeluaran";
+                    inputName.value = item.name;
+                    inputPrice.value = item.price;
+                    inputQty.value = item.qty;
+                    calculateTotal();
+                }
+            } else {
+                // Mode Baru
+                editingId = null;
+                modalTitle.innerText = "Pengeluaran Baru";
+                clearAddForm();
+            }
             inputName.focus();
         }
 
         function closeAddModal() {
             addModal.classList.remove('active');
             clearAddForm();
+            editingId = null;
         }
 
         function clearAddForm() {
@@ -464,15 +515,28 @@
                 return;
             }
 
-            const newItem = {
-                id: Date.now(),
-                name: name,
-                price: price,
-                qty: qty,
-                total: price * qty
-            };
+            const total = price * qty;
 
-            expenses.push(newItem);
+            if (editingId) {
+                // Update Existing
+                expenses = expenses.map(item => {
+                    if (item.id === editingId) {
+                        return { ...item, name, price, qty, total };
+                    }
+                    return item;
+                });
+            } else {
+                // Add New
+                const newItem = {
+                    id: Date.now(),
+                    name: name,
+                    price: price,
+                    qty: qty,
+                    total: total
+                };
+                expenses.push(newItem);
+            }
+
             renderList();
             closeAddModal();
         }
@@ -495,11 +559,11 @@
                 return;
             }
             salary = val;
-            renderList(); // Re-calculate dashboard
+            renderList();
             closeSalaryModal();
         }
 
-        // --- General Logic ---
+        // --- Item Actions ---
         function deleteItem(id) {
             if(confirm('Hapus item ini?')) {
                 expenses = expenses.filter(item => item.id !== id);
@@ -507,11 +571,11 @@
             }
         }
 
+        // --- Render UI ---
         function renderList() {
             listContainer.innerHTML = '';
             let totalExpenses = 0;
 
-            // Render List Items
             if (expenses.length === 0) {
                 listContainer.innerHTML = '<div class="empty-state">Belum ada pengeluaran.</div>';
             } else {
@@ -520,29 +584,31 @@
 
                     const div = document.createElement('div');
                     div.className = 'list-item';
+                    
+                    // Kita tambahkan class "hide-on-export" pada div action buttons agar tidak muncul di PDF
                     div.innerHTML = `
                         <div class="item-details">
                             <span class="item-name">${item.name}</span>
                             <span class="item-meta">${item.qty} x ${formatRupiah(item.price)}</span>
                         </div>
-                        <div style="display:flex; align-items:center;">
+                        <div class="item-right">
                             <span class="item-total">${formatRupiah(item.total)}</span>
-                            <button class="delete-btn" onclick="deleteItem(${item.id})">Hapus</button>
+                            <div class="item-actions hide-on-export">
+                                <button class="action-btn btn-edit" onclick="openAddModal(${item.id})">Edit</button>
+                                <button class="action-btn btn-delete" onclick="deleteItem(${item.id})">Hapus</button>
+                            </div>
                         </div>
                     `;
                     listContainer.appendChild(div);
                 });
             }
 
-            // Calculate Remaining
             const remaining = salary - totalExpenses;
 
-            // Update Dashboard UI
             dashboardSalary.innerText = formatRupiah(salary);
             dashboardExpense.innerText = formatRupiah(totalExpenses);
             dashboardRemaining.innerText = formatRupiah(remaining);
 
-            // Change color if balance is negative
             if (remaining < 0) {
                 dashboardRemaining.classList.add('minus');
             } else {
@@ -550,10 +616,31 @@
             }
         }
 
-        // --- Initialization ---
-        // Auto-prompt salary if 0 on load (Optional, commented out)
-        // setTimeout(() => { if(salary === 0) openSalaryModal(); }, 500);
+        // --- PDF Generation Logic ---
+        function downloadPDF() {
+            const element = document.getElementById('printable-area');
+            
+            // Konfigurasi PDF
+            const opt = {
+                margin:       [10, 10, 10, 10], // top, left, bottom, right
+                filename:     `Laporan_Keuangan_${new Date().toLocaleDateString('id-ID')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
 
+            // Tambahkan class sementara untuk menyembunyikan elemen tertentu saat render
+            const buttons = document.querySelectorAll('.hide-on-export');
+            buttons.forEach(b => b.style.display = 'none');
+
+            // Generate
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Kembalikan tampilan tombol setelah selesai
+                buttons.forEach(b => b.style.display = 'flex');
+            });
+        }
+
+        // --- Init ---
         renderList();
 
         // Close modals on outside click
