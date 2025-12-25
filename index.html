@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pengeluaran Bulanan iOS Style</title>
+    <title>Tracking Gaji iOS Style</title>
     <style>
         /* --- iOS Variables & Reset --- */
         :root {
@@ -11,6 +11,7 @@
             --ios-card: #FFFFFF;
             --ios-blue: #007AFF;
             --ios-red: #FF3B30;
+            --ios-green: #34C759;
             --ios-gray-text: #8E8E93;
             --ios-separator: #C6C6C8;
             --ios-text: #000000;
@@ -35,38 +36,97 @@
 
         /* --- Header / Dashboard --- */
         .header {
-            padding: 20px 20px 10px 20px;
+            padding: 20px 20px 15px 20px;
             background-color: var(--ios-bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
         .header h1 {
             font-size: 34px;
             font-weight: 700;
-            margin: 0 0 5px 0;
+            margin: 0;
             letter-spacing: -0.5px;
         }
 
-        .summary-card {
-            margin-top: 10px;
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--ios-blue);
+            font-size: 17px;
+            font-weight: 400;
+            cursor: pointer;
+            padding: 0;
         }
 
-        .total-label {
+        .summary-card {
+            background-color: var(--ios-card);
+            border-radius: var(--ios-radius);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            text-align: center;
+        }
+
+        .balance-label {
             font-size: 13px;
             color: var(--ios-gray-text);
             text-transform: uppercase;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
-        .total-amount {
-            font-size: 28px;
+        .balance-amount {
+            font-size: 36px;
             font-weight: 700;
             color: var(--ios-text);
+            margin-bottom: 10px;
+        }
+
+        .balance-amount.minus {
+            color: var(--ios-red);
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #E5E5EA;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--ios-gray-text);
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 15px;
+            font-weight: 600;
         }
 
         /* --- List Section --- */
+        .list-header {
+            margin: 25px 20px 5px 20px;
+            font-size: 13px;
+            color: var(--ios-gray-text);
+            text-transform: uppercase;
+        }
+
         .list-container {
-            margin: 20px 16px;
+            margin: 5px 16px 20px 16px;
             background-color: var(--ios-card);
             border-radius: var(--ios-radius);
             overflow: hidden;
@@ -211,13 +271,8 @@
             padding: 5px;
         }
 
-        .btn-text.cancel {
-            color: var(--ios-blue);
-        }
-
-        .btn-text.save {
-            font-weight: 600;
-        }
+        .btn-text.cancel { color: var(--ios-blue); }
+        .btn-text.save { font-weight: 600; }
 
         /* iOS Form Style */
         .form-group-container {
@@ -255,37 +310,48 @@
             background: transparent;
         }
         
-        .form-row input::placeholder {
-            color: #C7C7CC;
-        }
-
-        .form-row input[readonly] {
-            color: var(--ios-gray-text);
-        }
+        .form-row input::placeholder { color: #C7C7CC; }
+        .form-row input[readonly] { color: var(--ios-gray-text); }
 
     </style>
 </head>
 <body>
 
     <header class="header">
-        <h1>Pengeluaran</h1>
+        <div class="header-top">
+            <h1>Keuangan</h1>
+            <button class="btn-link" onclick="openSalaryModal()">Atur Gaji</button>
+        </div>
+        
         <div class="summary-card">
-            <div class="total-label">Total Bulan Ini</div>
-            <div class="total-amount" id="dashboard-total">Rp 0</div>
+            <div class="balance-label">Sisa Gaji Saat Ini</div>
+            <div class="balance-amount" id="dashboard-remaining">Rp 0</div>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Pemasukan (Gaji)</div>
+                    <div class="stat-value" id="dashboard-salary" style="color: var(--ios-blue);">Rp 0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Pengeluaran</div>
+                    <div class="stat-value" id="dashboard-expense" style="color: var(--ios-red);">Rp 0</div>
+                </div>
+            </div>
         </div>
     </header>
 
+    <div class="list-header">Riwayat Pengeluaran</div>
     <div class="list-container" id="expense-list">
-        <div class="empty-state">Belum ada pengeluaran.</div>
+        <div class="empty-state">Belum ada data.</div>
     </div>
 
-    <button class="fab" onclick="openModal()">+</button>
+    <button class="fab" onclick="openAddModal()">+</button>
 
-    <div class="modal-overlay" id="modal">
+    <div class="modal-overlay" id="add-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <button class="btn-text cancel" onclick="closeModal()">Batal</button>
-                <div class="modal-title">Item Baru</div>
+                <button class="btn-text cancel" onclick="closeAddModal()">Batal</button>
+                <div class="modal-title">Pengeluaran Baru</div>
                 <button class="btn-text save" onclick="saveItem()">Simpan</button>
             </div>
 
@@ -293,7 +359,7 @@
                 <div class="form-group-container">
                     <div class="form-row">
                         <label>Nama Item</label>
-                        <input type="text" id="input-name" placeholder="Contoh: Kopi" required>
+                        <input type="text" id="input-name" placeholder="Contoh: Makan Siang" required>
                     </div>
                     <div class="form-row">
                         <label>Harga</label>
@@ -312,19 +378,45 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="salary-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="btn-text cancel" onclick="closeSalaryModal()">Batal</button>
+                <div class="modal-title">Atur Gaji</div>
+                <button class="btn-text save" onclick="saveSalary()">Simpan</button>
+            </div>
+            <div class="form-group-container">
+                <div class="form-row">
+                    <label>Nominal</label>
+                    <input type="number" id="input-salary" placeholder="Masukan Gaji Bulanan">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
+        let salary = 0;
         let expenses = [];
 
         // --- DOM Elements ---
-        const modal = document.getElementById('modal');
+        const addModal = document.getElementById('add-modal');
+        const salaryModal = document.getElementById('salary-modal');
         const listContainer = document.getElementById('expense-list');
-        const dashboardTotal = document.getElementById('dashboard-total');
         
+        // Dashboard Elements
+        const dashboardRemaining = document.getElementById('dashboard-remaining');
+        const dashboardSalary = document.getElementById('dashboard-salary');
+        const dashboardExpense = document.getElementById('dashboard-expense');
+        
+        // Add Form Elements
         const inputName = document.getElementById('input-name');
         const inputPrice = document.getElementById('input-price');
         const inputQty = document.getElementById('input-qty');
         const inputTotal = document.getElementById('input-total');
+
+        // Salary Form Elements
+        const inputSalary = document.getElementById('input-salary');
 
         // --- Functions ---
 
@@ -337,26 +429,24 @@
             }).format(number);
         }
 
-        // Open/Close Modal
-        function openModal() {
-            modal.classList.add('active');
+        // --- Add Item Modal Logic ---
+        function openAddModal() {
+            addModal.classList.add('active');
             inputName.focus();
         }
 
-        function closeModal() {
-            modal.classList.remove('active');
-            clearForm();
+        function closeAddModal() {
+            addModal.classList.remove('active');
+            clearAddForm();
         }
 
-        // Clear Form Inputs
-        function clearForm() {
+        function clearAddForm() {
             inputName.value = '';
             inputPrice.value = '';
             inputQty.value = '1';
             inputTotal.value = '';
         }
 
-        // Auto Calculate Total in Form
         function calculateTotal() {
             const price = parseFloat(inputPrice.value) || 0;
             const qty = parseFloat(inputQty.value) || 0;
@@ -364,14 +454,13 @@
             inputTotal.value = formatRupiah(total);
         }
 
-        // Save Item
         function saveItem() {
             const name = inputName.value.trim();
             const price = parseFloat(inputPrice.value);
             const qty = parseFloat(inputQty.value);
 
             if (!name || isNaN(price) || isNaN(qty) || qty <= 0) {
-                alert("Mohon lengkapi semua data dengan benar.");
+                alert("Mohon lengkapi data item dengan benar.");
                 return;
             }
 
@@ -385,10 +474,32 @@
 
             expenses.push(newItem);
             renderList();
-            closeModal();
+            closeAddModal();
         }
 
-        // Delete Item
+        // --- Salary Modal Logic ---
+        function openSalaryModal() {
+            salaryModal.classList.add('active');
+            inputSalary.value = salary === 0 ? '' : salary;
+            inputSalary.focus();
+        }
+
+        function closeSalaryModal() {
+            salaryModal.classList.remove('active');
+        }
+
+        function saveSalary() {
+            const val = parseFloat(inputSalary.value);
+            if(isNaN(val) || val < 0) {
+                alert("Masukan nominal gaji yang valid.");
+                return;
+            }
+            salary = val;
+            renderList(); // Re-calculate dashboard
+            closeSalaryModal();
+        }
+
+        // --- General Logic ---
         function deleteItem(id) {
             if(confirm('Hapus item ini?')) {
                 expenses = expenses.filter(item => item.id !== id);
@@ -396,47 +507,59 @@
             }
         }
 
-        // Render List & Update Dashboard
         function renderList() {
             listContainer.innerHTML = '';
-            let grandTotal = 0;
+            let totalExpenses = 0;
 
+            // Render List Items
             if (expenses.length === 0) {
                 listContainer.innerHTML = '<div class="empty-state">Belum ada pengeluaran.</div>';
-                dashboardTotal.innerText = formatRupiah(0);
-                return;
+            } else {
+                expenses.forEach(item => {
+                    totalExpenses += item.total;
+
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="item-details">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-meta">${item.qty} x ${formatRupiah(item.price)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span class="item-total">${formatRupiah(item.total)}</span>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})">Hapus</button>
+                        </div>
+                    `;
+                    listContainer.appendChild(div);
+                });
             }
 
-            expenses.forEach(item => {
-                grandTotal += item.total;
+            // Calculate Remaining
+            const remaining = salary - totalExpenses;
 
-                const div = document.createElement('div');
-                div.className = 'list-item';
-                div.innerHTML = `
-                    <div class="item-details">
-                        <span class="item-name">${item.name}</span>
-                        <span class="item-meta">${item.qty} x ${formatRupiah(item.price)}</span>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <span class="item-total">${formatRupiah(item.total)}</span>
-                        <button class="delete-btn" onclick="deleteItem(${item.id})">Hapus</button>
-                    </div>
-                `;
-                listContainer.appendChild(div);
-            });
+            // Update Dashboard UI
+            dashboardSalary.innerText = formatRupiah(salary);
+            dashboardExpense.innerText = formatRupiah(totalExpenses);
+            dashboardRemaining.innerText = formatRupiah(remaining);
 
-            // Update Dashboard
-            dashboardTotal.innerText = formatRupiah(grandTotal);
+            // Change color if balance is negative
+            if (remaining < 0) {
+                dashboardRemaining.classList.add('minus');
+            } else {
+                dashboardRemaining.classList.remove('minus');
+            }
         }
 
-        // Initialize with sample data (Optional, currently empty)
+        // --- Initialization ---
+        // Auto-prompt salary if 0 on load (Optional, commented out)
+        // setTimeout(() => { if(salary === 0) openSalaryModal(); }, 500);
+
         renderList();
 
-        // Close modal when clicking outside form
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeModal();
-            }
+        // Close modals on outside click
+        window.addEventListener('click', function(e) {
+            if (e.target === addModal) closeAddModal();
+            if (e.target === salaryModal) closeSalaryModal();
         });
 
     </script>
